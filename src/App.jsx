@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Menu } from 'lucide-react';
 import { INITIAL_JOURNAL_DATA } from './constants/journalConfig';
-import { toDateKey } from './utils/dateHelpers';
+import { toDateKey, shiftDays, calculateJournalStreak } from './utils/dateHelpers';
 import { useLocalStorage } from './hooks/useLocalStorage';
+import { useFocusTimer } from './hooks/useFocusTimer';
 
 import Sidebar from './components/layout/Sidebar';
 import DailyView from './components/views/DailyView';
@@ -14,12 +15,14 @@ import HabitTracker from './components/trackers/HabitTracker';
 import MoodGratitudeArchive from './components/trackers/MoodGratitudeArchive';
 import WatchlistTracker from './components/trackers/WatchlistTracker';
 import ReadingTracker from './components/trackers/ReadingTracker';
+import FocusTimer, { MiniTimer } from './components/trackers/FocusTimer';
 
 export default function App() {
   const [data, setData] = useLocalStorage('ruang_jurnal_v1', INITIAL_JOURNAL_DATA);
   const [activeTab, setActiveTab] = useState('daily');
   const [selectedDate, setSelectedDate] = useState(toDateKey(new Date()));
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [growthTheme, setGrowthTheme] = useLocalStorage('ruang_jurnal_growth', 'plant');
 
   const updateDaily = (dateKey, entry) => {
     setData((prev) => ({
@@ -79,6 +82,54 @@ export default function App() {
     }));
   };
 
+  // Dipanggil timer setiap sesi fokus selesai: catat ke log harian + tambah 🍅 ke tugas terpilih
+  const handleFocusComplete = ({ minutes, taskId }) => {
+    const key = toDateKey(new Date());
+    setData((prev) => {
+      const logs = prev.focusLogs || {};
+      const cur = logs[key] || { pomodoros: 0, minutes: 0 };
+      const next = {
+        ...prev,
+        focusLogs: { ...logs, [key]: { pomodoros: cur.pomodoros + 1, minutes: cur.minutes + minutes } },
+      };
+      const day = prev.daily[key];
+      if (taskId && day?.priorities?.some((p) => p.id === taskId)) {
+        next.daily = {
+          ...prev.daily,
+          [key]: {
+            ...day,
+            priorities: day.priorities.map((p) =>
+              p.id === taskId ? { ...p, pomos: (p.pomos || 0) + 1 } : p
+            ),
+          },
+        };
+      }
+      return next;
+    });
+  };
+
+  const timer = useFocusTimer(handleFocusComplete);
+
+  // Pindahkan tugas prioritas yang belum selesai ke hari berikutnya
+  const carryOver = (dateKey) => {
+    setData((prev) => {
+      const src = prev.daily[dateKey];
+      const pending = (src?.priorities || []).filter((p) => !p.done);
+      if (!pending.length) return prev;
+      const nextKey = shiftDays(dateKey, 1);
+      const dst = prev.daily[nextKey] || {};
+      const moved = pending.map((p, i) => ({ ...p, id: `${Date.now()}-${i}`, pomos: 0 }));
+      return {
+        ...prev,
+        daily: {
+          ...prev.daily,
+          [dateKey]: { ...src, priorities: src.priorities.filter((p) => p.done) },
+          [nextKey]: { ...dst, priorities: [...(dst.priorities || []), ...moved] },
+        },
+      };
+    });
+  };
+
   const jumpToDaily = (dateStr) => {
     setSelectedDate(dateStr);
     setActiveTab('daily');
@@ -94,6 +145,27 @@ export default function App() {
     URL.revokeObjectURL(url);
   };
 
+  const handleImport = (file) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(reader.result);
+        if (typeof parsed !== 'object' || parsed === null || !parsed.daily) {
+          throw new Error('Format tidak dikenali');
+        }
+        if (window.confirm('Timpa data saat ini dengan isi file backup ini?')) {
+          setData({ ...INITIAL_JOURNAL_DATA, ...parsed });
+        }
+      } catch {
+        window.alert('File backup tidak valid. Pastikan itu file .json hasil Export Backup.');
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const streak = calculateJournalStreak(data.daily);
+
   const handleReset = () => {
     if (window.confirm('Kembalikan semua data jurnal ke pengaturan awal?')) {
       setData(INITIAL_JOURNAL_DATA);
@@ -101,17 +173,19 @@ export default function App() {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#FAF7F2] text-[#2D2A26]">
+    <div className="bg-dots flex min-h-screen text-[#2D2A26]">
       <Sidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         onExport={handleExport}
         onReset={handleReset}
+        onImport={handleImport}
+        streak={streak}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
       />
 
-      <div className="flex flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col">
         {/* Topbar Mobile */}
         <header className="flex items-center justify-between border-b border-[#E6DFD3] bg-[#F4EFE6] px-4 py-3 lg:hidden">
           <button
@@ -134,6 +208,11 @@ export default function App() {
               habits={data.habits}
               completedHabitIds={data.habitLogs[selectedDate] || []}
               onToggleHabit={toggleHabit}
+              streak={streak}
+              focusToday={(data.focusLogs || {})[toDateKey(new Date())]}
+              onCarryOver={carryOver}
+              habitLogs={data.habitLogs}
+              growthTheme={growthTheme}
             />
           )}
 
@@ -184,6 +263,8 @@ export default function App() {
               onToggleHabit={toggleHabit}
               onAddHabit={addHabit}
               onDeleteHabit={deleteHabit}
+              growthTheme={growthTheme}
+              onChangeGrowthTheme={setGrowthTheme}
             />
           )}
 
@@ -206,8 +287,21 @@ export default function App() {
               }
             />
           )}
+          {activeTab === 'focus' && (
+            <FocusTimer
+              timer={timer}
+              focusLogs={data.focusLogs || {}}
+              todayPriorities={(data.daily[toDateKey(new Date())]?.priorities || []).filter(
+                (p) => !p.done
+              )}
+            />
+          )}
         </main>
       </div>
+
+      {timer.state.running && activeTab !== 'focus' && (
+        <MiniTimer timer={timer} onOpen={() => setActiveTab('focus')} />
+      )}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight, Plus, CheckCircle2, Circle, Trash2 } from 'lucide-react';
 import { MOODS } from '../../constants/journalConfig';
-import { getCalendarMatrix, getMonthKey } from '../../utils/dateHelpers';
+import { getCalendarMatrix, getMonthKey, toDateKey } from '../../utils/dateHelpers';
 
 const MONTH_NAMES = [
   'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
@@ -29,6 +29,14 @@ export default function MonthlyView({
   };
 
   const matrix = getCalendarMatrix(year, month);
+  const todayStr = toDateKey(new Date());
+
+  const monthDays = matrix.filter(Boolean);
+  const moodDays = monthDays.filter((d) => dailyData[d]?.mood);
+  const avgMood = moodDays.length
+    ? (moodDays.reduce((s, d) => s + dailyData[d].mood, 0) / moodDays.length).toFixed(1)
+    : '–';
+  const goalsDone = currentMonth.goals.filter((g) => g.done).length;
 
   const changeMonth = (delta) => {
     const next = new Date(year, month + delta, 1);
@@ -87,6 +95,20 @@ export default function MonthlyView({
         </div>
       </div>
 
+      {/* Ringkasan bulan */}
+      <div className="grid grid-cols-3 gap-3">
+        {[
+          { label: 'Hari dengan mood', value: `${moodDays.length}/${monthDays.length}` },
+          { label: 'Rata-rata mood', value: avgMood },
+          { label: 'Target tercapai', value: `${goalsDone}/${currentMonth.goals.length}` },
+        ].map((s) => (
+          <div key={s.label} className="rounded-2xl border border-[#E6DFD3] bg-white p-4 text-center shadow-2xs">
+            <p className="font-serif text-2xl font-bold text-[#5C7A67]">{s.value}</p>
+            <p className="mt-0.5 text-[11px] text-[#8C8378]">{s.label}</p>
+          </div>
+        ))}
+      </div>
+
       {/* Kalender Interaktif */}
       <section className="rounded-2xl border border-[#E6DFD3] bg-white p-5 shadow-2xs">
         <p className="mb-3 text-xs text-[#8C8378]">
@@ -110,7 +132,8 @@ export default function MonthlyView({
               <button
                 key={dateStr}
                 onClick={() => onJumpToDaily(dateStr)}
-                className="flex h-20 flex-col justify-between rounded-xl border border-[#E6DFD3] bg-[#FAF7F2]/70 p-2 text-left transition hover:border-[#5C7A67] hover:bg-white"
+                className={`flex h-20 flex-col justify-between rounded-xl border p-2 text-left transition hover:scale-[1.03] hover:shadow-md ${dateStr === todayStr ? 'ring-2 ring-[#C86D51]/60 ' : ''
+                  }${moodObj ? moodObj.color : 'border-[#E6DFD3] bg-[#FAF7F2]/70 hover:border-[#5C7A67] hover:bg-white'}`}
               >
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-[#2D2A26]">

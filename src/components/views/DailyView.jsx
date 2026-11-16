@@ -1,7 +1,20 @@
 import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight, Sparkles, CheckCircle2, Circle, Plus, Trash2 } from 'lucide-react';
-import { MOODS } from '../../constants/journalConfig';
-import { formatDisplayDate, shiftDays, toDateKey } from '../../utils/dateHelpers';
+import {
+  ChevronLeft,
+  ChevronRight,
+  Sparkles,
+  CheckCircle2,
+  Circle,
+  Plus,
+  Trash2,
+  Droplets,
+  Flame,
+  Shuffle,
+  Star,
+} from 'lucide-react';
+import { MOODS, PROMPTS, QUOTES } from '../../constants/journalConfig';
+import { formatDisplayDate, shiftDays, toDateKey, calculateHabitStreak } from '../../utils/dateHelpers';
+import GrowthIcon, { stageFromStreak } from '../ui/GrowthIcon';
 
 export default function DailyView({
   selectedDate,
@@ -11,16 +24,29 @@ export default function DailyView({
   habits,
   completedHabitIds,
   onToggleHabit,
+  streak = 0,
+  focusToday = null,
+  onCarryOver = () => { },
+  habitLogs = {},
+  growthTheme = 'plant',
 }) {
   const [newTask, setNewTask] = useState('');
+  const [promptIdx, setPromptIdx] = useState(() => new Date().getDate() % PROMPTS.length);
 
   const entry = {
     mood: null,
     gratitude: ['', '', ''],
     priorities: [],
     reflection: '',
+    highlight: '',
+    water: 0,
     ...dailyEntry,
   };
+
+  const quote = QUOTES[Number(selectedDate.slice(8)) % QUOTES.length];
+  const wordCount = entry.reflection.trim() ? entry.reflection.trim().split(/\s+/).length : 0;
+  const setWater = (n) =>
+    onUpdateDaily(selectedDate, { ...entry, water: entry.water === n ? n - 1 : n });
 
   const handleGratitudeChange = (index, value) => {
     const updated = [...entry.gratitude];
@@ -30,7 +56,7 @@ export default function DailyView({
 
   const handleAddPriority = (e) => {
     e.preventDefault();
-    if (!newTask.trim() || entry.priorities.length >= 5) return;
+    if (!newTask.trim()) return;
     const updated = [
       ...entry.priorities,
       { id: Date.now().toString(), text: newTask.trim(), done: false },
@@ -86,6 +112,62 @@ export default function DailyView({
         </div>
       </div>
 
+      {/* Strip semangat: streak + kutipan */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-dashed border-[#C86D51]/40 bg-[#FFF8F3] px-5 py-3">
+        <p className="font-hand text-xl text-[#C86D51]">{quote}</p>
+        <div className="flex flex-wrap items-center gap-2">
+          {focusToday && focusToday.pomodoros > 0 && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-xs font-semibold text-[#5C7A67] shadow-2xs">
+              🍅 {focusToday.pomodoros} pomodoro · {focusToday.minutes} menit fokus
+            </span>
+          )}
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-xs font-semibold text-[#C86D51] shadow-2xs">
+            <Flame className="h-3.5 w-3.5" />
+            {streak} hari menulis berturut-turut
+          </span>
+        </div>
+      </div>
+
+      {/* Highlight + Air */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <section className="rounded-2xl border border-[#E6DFD3] bg-white p-5 shadow-2xs">
+          <h3 className="mb-3 flex items-center gap-2 font-serif text-lg font-semibold text-[#2D2A26]">
+            <Star className="h-4 w-4 text-amber-500" /> Highlight Hari Ini
+          </h3>
+          <input
+            type="text"
+            value={entry.highlight}
+            onChange={(e) => onUpdateDaily(selectedDate, { ...entry, highlight: e.target.value })}
+            placeholder="Satu kalimat tentang momen terbaik hari ini..."
+            className="w-full rounded-xl border border-[#E6DFD3] bg-[#FAF7F2] px-3.5 py-2.5 text-sm"
+          />
+        </section>
+
+        <section className="rounded-2xl border border-[#E6DFD3] bg-white p-5 shadow-2xs">
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="flex items-center gap-2 font-serif text-lg font-semibold text-[#2D2A26]">
+              <Droplets className="h-4 w-4 text-sky-500" /> Air Putih
+            </h3>
+            <span className="text-xs text-[#8C8378]">{entry.water}/8 gelas</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setWater(i + 1)}
+                className={`flex h-9 w-9 items-center justify-center rounded-xl border transition ${i < entry.water
+                  ? 'border-sky-300 bg-sky-100 text-sky-600'
+                  : 'border-[#E6DFD3] bg-[#FAF7F2] text-[#C9BFAE] hover:border-sky-300'
+                  }`}
+                title={`Gelas ${i + 1}`}
+              >
+                <Droplets className="h-4 w-4" />
+              </button>
+            ))}
+          </div>
+        </section>
+      </div>
+
       {/* Mood Tracker */}
       <section className="rounded-2xl border border-[#E6DFD3] bg-white p-5 shadow-2xs">
         <h3 className="mb-3 font-serif text-lg font-semibold text-[#2D2A26]">
@@ -118,7 +200,9 @@ export default function DailyView({
             <h3 className="font-serif text-lg font-semibold text-[#2D2A26]">
               Prioritas Utama Hari Ini
             </h3>
-            <span className="text-xs text-[#8C8378]">{entry.priorities.length}/5 target</span>
+            <span className="text-xs text-[#8C8378]">
+              {entry.priorities.filter((p) => p.done).length}/{entry.priorities.length} selesai
+            </span>
           </div>
 
           <form onSubmit={handleAddPriority} className="mb-4 flex gap-2">
@@ -137,7 +221,7 @@ export default function DailyView({
             </button>
           </form>
 
-          <div className="space-y-2">
+          <div className="max-h-[28rem] space-y-2 overflow-y-auto pr-1">
             {entry.priorities.length === 0 && (
               <p className="py-4 text-center text-xs text-[#8C8378]">
                 Belum ada prioritas tercatat untuk tanggal ini.
@@ -160,6 +244,9 @@ export default function DailyView({
                   <span className={item.done ? 'text-[#8C8378] line-through' : 'text-[#2D2A26]'}>
                     {item.text}
                   </span>
+                  {item.pomos > 0 && (
+                    <span className="ml-1 shrink-0 text-[11px] text-[#C86D51]">🍅×{item.pomos}</span>
+                  )}
                 </button>
                 <button
                   onClick={() => removePriority(item.id)}
@@ -170,6 +257,15 @@ export default function DailyView({
               </div>
             ))}
           </div>
+          {entry.priorities.some((p) => !p.done) && (
+            <button
+              type="button"
+              onClick={() => onCarryOver(selectedDate)}
+              className="mt-3 w-full rounded-xl border border-dashed border-[#C86D51]/50 px-3 py-2 text-xs font-semibold text-[#C86D51] hover:bg-[#FFF3EA]"
+            >
+              Pindahkan {entry.priorities.filter((p) => !p.done).length} tugas yang belum selesai ke besok →
+            </button>
+          )}
         </section>
 
         {/* Habit Harian (Tersinkron dengan Habit Tracker) */}
@@ -196,8 +292,13 @@ export default function DailyView({
                     }`}
                 >
                   <span className="flex items-center gap-2.5">
+                    <GrowthIcon
+                      stage={stageFromStreak(calculateHabitStreak(habit.id, habitLogs))}
+                      theme={growthTheme}
+                      size={36}
+                    />
                     {checked ? (
-                      <CheckCircle2 className="h-4 w-4 text-[#5C7A67]" />
+                      <CheckCircle2 className="check-pop h-4 w-4 text-[#5C7A67]" />
                     ) : (
                       <Circle className="h-4 w-4 text-[#8C8378]" />
                     )}
@@ -208,6 +309,11 @@ export default function DailyView({
               );
             })}
           </div>
+          {habits.length > 0 && completedHabitIds.length === habits.length && (
+            <p className="mt-3 text-center font-hand text-xl text-[#5C7A67]">
+              🎉 Semua kebiasaan hari ini selesai!
+            </p>
+          )}
         </section>
       </div>
 
@@ -237,9 +343,21 @@ export default function DailyView({
 
       {/* Brain Dump / Refleksi Bebas */}
       <section className="rounded-2xl border border-[#E6DFD3] bg-white p-5 shadow-2xs">
-        <h3 className="mb-3 font-serif text-lg font-semibold text-[#2D2A26]">
-          Catatan & Refleksi Bebas
-        </h3>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h3 className="font-serif text-lg font-semibold text-[#2D2A26]">
+            Catatan & Refleksi Bebas
+          </h3>
+          <span className="text-xs text-[#8C8378]">{wordCount} kata</span>
+        </div>
+        <button
+          type="button"
+          onClick={() => setPromptIdx((promptIdx + 1) % PROMPTS.length)}
+          className="mb-3 flex w-full items-center justify-between gap-3 rounded-xl bg-[#5C7A67]/10 px-4 py-2.5 text-left text-sm text-[#3F5B4B] hover:bg-[#5C7A67]/15"
+          title="Klik untuk ganti pertanyaan"
+        >
+          <span className="font-hand text-lg">💭 {PROMPTS[promptIdx]}</span>
+          <Shuffle className="h-4 w-4 shrink-0" />
+        </button>
         <textarea
           rows={5}
           value={entry.reflection}
