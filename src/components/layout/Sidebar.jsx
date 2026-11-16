@@ -10,10 +10,12 @@ import {
   Film,
   Library,
   Timer,
-  Download,
-  Upload,
   Flame,
-  RotateCcw,
+  TrendingUp,
+  Settings,
+  Moon,
+  Sun,
+  Cloud,
   X,
 } from 'lucide-react';
 
@@ -23,6 +25,7 @@ const TIME_NAV = [
   { id: 'monthly', label: 'Bulanan', icon: Calendar },
   { id: 'quarterly', label: 'Quarterly (Q1–Q4)', icon: Compass },
   { id: 'yearly', label: 'Tahunan', icon: CalendarRange },
+  { id: 'insights', label: 'Ringkasan & Wawasan', icon: TrendingUp },
 ];
 
 const TRACKER_NAV = [
@@ -36,9 +39,9 @@ const TRACKER_NAV = [
 export default function Sidebar({
   activeTab,
   setActiveTab,
-  onExport,
-  onReset,
-  onImport,
+  theme = 'light',
+  onToggleTheme = () => { },
+  cloudStatus = 'unconfigured',
   streak = 0,
   isOpen,
   onClose,
@@ -133,33 +136,35 @@ export default function Sidebar({
             <Flame className="h-4 w-4" />
             {streak > 0 ? `${streak} hari beruntun menulis` : 'Mulai streak menulismu hari ini'}
           </div>
-          <label className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-[#D8CFC0] bg-[#FAF7F2] px-3 py-2 text-xs font-medium text-[#2D2A26] transition hover:bg-[#E6DFD3]/50">
-            <Upload className="h-3.5 w-3.5 text-[#C86D51]" />
-            Import Backup JSON
-            <input
-              type="file"
-              accept="application/json,.json"
-              className="hidden"
-              onChange={(e) => {
-                onImport(e.target.files?.[0]);
-                e.target.value = '';
-              }}
-            />
-          </label>
-          <button
-            onClick={onExport}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border border-[#D8CFC0] bg-[#FAF7F2] px-3 py-2 text-xs font-medium text-[#2D2A26] transition hover:bg-[#E6DFD3]/50"
-          >
-            <Download className="h-3.5 w-3.5 text-[#5C7A67]" />
-            Export Backup JSON
-          </button>
-          <button
-            onClick={onReset}
-            className="flex w-full items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-[#8C8378] transition hover:bg-rose-50 hover:text-rose-700"
-          >
-            <RotateCcw className="h-3.5 w-3.5" />
-            Reset Data Default
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => handleSelect('settings')}
+              className={`flex flex-1 items-center justify-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold transition ${activeTab === 'settings'
+                ? 'border-[#5C7A67] bg-[#5C7A67] text-white'
+                : 'border-[#D8CFC0] bg-[#FAF7F2] text-[#2D2A26] hover:bg-[#E6DFD3]/50'
+                }`}
+            >
+              <Settings className="h-3.5 w-3.5" /> Pengaturan
+            </button>
+            <button
+              onClick={onToggleTheme}
+              aria-label="Ganti mode terang/gelap"
+              title={theme === 'dark' ? 'Mode terang' : 'Mode gelap'}
+              className="rounded-xl border border-[#D8CFC0] bg-[#FAF7F2] p-2 text-[#2D2A26] transition hover:bg-[#E6DFD3]/50"
+            >
+              {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </button>
+          </div>
+          {cloudStatus !== 'unconfigured' && (
+            <p className="flex items-center justify-center gap-1.5 text-[11px] text-[#8C8378]" data-testid="sidebar-cloud">
+              <Cloud className="h-3 w-3" />
+              {cloudStatus === 'synced' && 'Tersinkron ke cloud'}
+              {cloudStatus === 'syncing' && 'Menyinkronkan…'}
+              {cloudStatus === 'error' && 'Gagal sinkron'}
+              {cloudStatus === 'signed-out' && 'Belum masuk akun'}
+              {cloudStatus === 'idle' && 'Siap'}
+            </p>
+          )}
         </div>
       </aside>
     </>

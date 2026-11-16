@@ -12,20 +12,23 @@ export const STAGE_LABELS = {
   butterfly: ['Telur', 'Ulat kecil', 'Ulat gemuk', 'Kepompong', 'Hampir menetas', 'Kupu-kupu'],
 };
 
-// streak minimal untuk mencapai tahap 1..5
+// streak minimal untuk mencapai tahap 1..5 (hari untuk kebiasaan harian, minggu untuk target mingguan)
 const THRESHOLDS = [1, 2, 4, 7, 14];
+const THRESHOLDS_WEEKLY = [1, 2, 3, 5, 8];
 
-export const stageFromStreak = (streak) => {
+export const stageFromStreak = (streak, weekly = false) => {
+  const list = weekly ? THRESHOLDS_WEEKLY : THRESHOLDS;
   let stage = 0;
-  THRESHOLDS.forEach((t, i) => {
+  list.forEach((t, i) => {
     if (streak >= t) stage = i + 1;
   });
   return stage;
 };
 
-// berapa hari lagi menuju tahap berikutnya (0 jika sudah mentok)
-export const daysToNextStage = (streak) => {
-  const next = THRESHOLDS.find((t) => streak < t);
+// berapa hari/minggu lagi menuju tahap berikutnya (0 jika sudah mentok)
+export const daysToNextStage = (streak, weekly = false) => {
+  const list = weekly ? THRESHOLDS_WEEKLY : THRESHOLDS;
+  const next = list.find((t) => streak < t);
   return next === undefined ? 0 : next - streak;
 };
 

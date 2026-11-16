@@ -11,9 +11,13 @@ import {
   Flame,
   Shuffle,
   Star,
+  Moon,
+  Zap,
+  Tag,
+  X,
 } from 'lucide-react';
 import { MOODS, PROMPTS, QUOTES } from '../../constants/journalConfig';
-import { formatDisplayDate, shiftDays, toDateKey, calculateHabitStreak } from '../../utils/dateHelpers';
+import { formatDisplayDate, shiftDays, toDateKey, getHabitProgress } from '../../utils/dateHelpers';
 import GrowthIcon, { stageFromStreak } from '../ui/GrowthIcon';
 
 export default function DailyView({
@@ -26,11 +30,13 @@ export default function DailyView({
   onToggleHabit,
   streak = 0,
   focusToday = null,
+  allTags = [],
   onCarryOver = () => { },
   habitLogs = {},
   growthTheme = 'plant',
 }) {
   const [newTask, setNewTask] = useState('');
+  const [tagInput, setTagInput] = useState('');
   const [promptIdx, setPromptIdx] = useState(() => new Date().getDate() % PROMPTS.length);
 
   const entry = {
@@ -40,6 +46,9 @@ export default function DailyView({
     reflection: '',
     highlight: '',
     water: 0,
+    sleep: '',
+    energy: null,
+    tags: [],
     ...dailyEntry,
   };
 
@@ -47,6 +56,23 @@ export default function DailyView({
   const wordCount = entry.reflection.trim() ? entry.reflection.trim().split(/\s+/).length : 0;
   const setWater = (n) =>
     onUpdateDaily(selectedDate, { ...entry, water: entry.water === n ? n - 1 : n });
+
+  const ENERGY = [
+    { v: 1, label: 'Habis' },
+    { v: 2, label: 'Rendah' },
+    { v: 3, label: 'Cukup' },
+    { v: 4, label: 'Baik' },
+    { v: 5, label: 'Penuh' },
+  ];
+
+  const addTag = (raw) => {
+    const tag = raw.trim().replace(/^#+/, '').toLowerCase().slice(0, 24);
+    if (!tag || entry.tags.includes(tag)) return;
+    onUpdateDaily(selectedDate, { ...entry, tags: [...entry.tags, tag] });
+  };
+  const removeTag = (tag) =>
+    onUpdateDaily(selectedDate, { ...entry, tags: entry.tags.filter((t) => t !== tag) });
+  const suggestions = allTags.filter((t) => !entry.tags.includes(t)).slice(0, 8);
 
   const handleGratitudeChange = (index, value) => {
     const updated = [...entry.gratitude];
@@ -156,8 +182,8 @@ export default function DailyView({
                 key={i}
                 onClick={() => setWater(i + 1)}
                 className={`flex h-9 w-9 items-center justify-center rounded-xl border transition ${i < entry.water
-                  ? 'border-sky-300 bg-sky-100 text-sky-600'
-                  : 'border-[#E6DFD3] bg-[#FAF7F2] text-[#C9BFAE] hover:border-sky-300'
+                    ? 'border-sky-300 bg-sky-100 text-sky-600'
+                    : 'border-[#E6DFD3] bg-[#FAF7F2] text-[#C9BFAE] hover:border-sky-300'
                   }`}
                 title={`Gelas ${i + 1}`}
               >
@@ -165,6 +191,110 @@ export default function DailyView({
               </button>
             ))}
           </div>
+        </section>
+      </div>
+
+      {/* Tidur, energi & tag */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <section className="rounded-2xl border border-[#E6DFD3] bg-white p-5 shadow-2xs">
+          <h3 className="mb-3 flex items-center gap-2 font-serif text-lg font-semibold text-[#2D2A26]">
+            <Moon className="h-4 w-4 text-indigo-400" /> Tidur & Energi
+          </h3>
+          <div className="mb-4 flex items-center gap-3">
+            <label className="text-xs font-medium text-[#8C8378]" htmlFor="sleep-hours">
+              Tidur semalam
+            </label>
+            <input
+              id="sleep-hours"
+              type="number"
+              min="0"
+              max="16"
+              step="0.5"
+              value={entry.sleep}
+              onChange={(e) =>
+                onUpdateDaily(selectedDate, {
+                  ...entry,
+                  sleep: e.target.value === '' ? '' : Math.min(16, Math.max(0, Number(e.target.value))),
+                })
+              }
+              placeholder="7.5"
+              className="w-20 rounded-xl border border-[#E6DFD3] bg-[#FAF7F2] px-3 py-2 text-center text-sm font-semibold"
+            />
+            <span className="text-xs text-[#8C8378]">jam</span>
+          </div>
+          <p className="mb-2 text-xs font-medium text-[#8C8378]">Level energi hari ini</p>
+          <div className="grid grid-cols-5 gap-2">
+            {ENERGY.map((en) => (
+              <button
+                key={en.v}
+                type="button"
+                onClick={() =>
+                  onUpdateDaily(selectedDate, { ...entry, energy: entry.energy === en.v ? null : en.v })
+                }
+                className={`flex flex-col items-center gap-1 rounded-xl border px-1 py-2 text-[11px] transition ${entry.energy === en.v
+                    ? 'border-amber-300 bg-amber-100 font-semibold text-amber-700'
+                    : 'border-[#E6DFD3] bg-[#FAF7F2] text-[#6E675F] hover:border-amber-300'
+                  }`}
+              >
+                <span className="flex">
+                  {Array.from({ length: en.v }).map((_, i) => (
+                    <Zap key={i} className="h-3 w-3" />
+                  ))}
+                </span>
+                {en.label}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section className="rounded-2xl border border-[#E6DFD3] bg-white p-5 shadow-2xs">
+          <h3 className="mb-3 flex items-center gap-2 font-serif text-lg font-semibold text-[#2D2A26]">
+            <Tag className="h-4 w-4 text-[#5C7A67]" /> Tag Hari Ini
+          </h3>
+          <div className="mb-3 flex flex-wrap gap-1.5">
+            {entry.tags.length === 0 && (
+              <span className="text-xs text-[#8C8378]">Belum ada tag. Contoh: kerja, keluarga, belajar.</span>
+            )}
+            {entry.tags.map((tag) => (
+              <span
+                key={tag}
+                className="inline-flex items-center gap-1 rounded-full bg-[#5C7A67]/10 px-2.5 py-1 text-xs font-semibold text-[#3F5B4B]"
+              >
+                #{tag}
+                <button type="button" onClick={() => removeTag(tag)} aria-label={`Hapus tag ${tag}`}>
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            ))}
+          </div>
+          <input
+            type="text"
+            value={tagInput}
+            onChange={(e) => setTagInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ',') {
+                e.preventDefault();
+                addTag(tagInput);
+                setTagInput('');
+              }
+            }}
+            placeholder="Ketik tag lalu Enter..."
+            className="w-full rounded-xl border border-[#E6DFD3] bg-[#FAF7F2] px-3.5 py-2 text-sm"
+          />
+          {suggestions.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {suggestions.map((tag) => (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => addTag(tag)}
+                  className="rounded-full border border-[#E6DFD3] px-2 py-0.5 text-[11px] text-[#6E675F] hover:bg-[#FAF7F2]"
+                >
+                  +#{tag}
+                </button>
+              ))}
+            </div>
+          )}
         </section>
       </div>
 
@@ -293,7 +423,10 @@ export default function DailyView({
                 >
                   <span className="flex items-center gap-2.5">
                     <GrowthIcon
-                      stage={stageFromStreak(calculateHabitStreak(habit.id, habitLogs))}
+                      stage={(() => {
+                        const pr = getHabitProgress(habit, habitLogs);
+                        return stageFromStreak(pr.streak, pr.weekly);
+                      })()}
                       theme={growthTheme}
                       size={36}
                     />

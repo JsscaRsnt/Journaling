@@ -13,12 +13,37 @@ export const PILLAR_TEMPLATES = [
   { id: 'personal', title: 'Personal & Relasi', accent: '#9B7E5C' },
 ];
 
+export const PROMPTS = [
+  'Apa satu hal kecil yang membuatmu tersenyum hari ini?',
+  'Kalau hari ini punya judul, apa judulnya?',
+  'Apa yang ingin kamu lepaskan sebelum tidur nanti?',
+  'Siapa orang yang ingin kamu ucapkan terima kasih, dan kenapa?',
+  'Apa yang kamu pelajari tentang dirimu hari ini?',
+  'Ceritakan momen paling tenang hari ini.',
+  'Apa yang akan kamu lakukan berbeda kalau hari ini diulang?',
+  'Tuliskan satu hal yang kamu banggakan dari dirimu minggu ini.',
+  'Apa yang tubuhmu butuhkan saat ini?',
+  'Kalau kamu bisa memberi saran pada dirimu kemarin, apa isinya?',
+  'Apa mimpi kecil yang ingin kamu wujudkan bulan ini?',
+  'Hal apa yang sedang kamu nantikan?',
+];
+
+export const QUOTES = [
+  'Pelan-pelan juga tetap maju. 🌱',
+  'Kamu sudah melakukan yang terbaik hari ini. ☕',
+  'Satu halaman kecil hari ini, satu cerita besar nanti. ✿',
+  'Istirahat itu bagian dari perjalanan. 🌙',
+  'Konsisten > sempurna. 🍃',
+  'Hari yang berat pun layak dicatat. 🤍',
+];
+
 export const INITIAL_JOURNAL_DATA = {
   daily: {},
   weekly: {},
   monthly: {},
   quarterly: {},
   yearly: {},
+  focusLogs: {}, // { 'YYYY-MM-DD': { pomodoros, minutes } }
   habits: [
     { id: 'h-1', name: 'Minum 2L Air Putih', category: 'Kesehatan' },
     { id: 'h-2', name: 'Belajar / Coding 1 Jam', category: 'Skill' },

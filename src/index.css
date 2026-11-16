@@ -207,3 +207,244 @@ button:active {
     animation: none;
   }
 }
+
+/* DARK-MODE:BEGIN (dibuat oleh scripts/gen-dark.py, jangan diedit manual) */
+html.dark {
+  color-scheme: dark;
+}
+
+html.dark body {
+  background: #171512;
+  color: #EEE8DD;
+}
+
+html.dark .bg-dots {
+  background-color: #171512;
+  background-image: radial-gradient(#2E2A24 1.1px, transparent 1.1px);
+}
+
+html.dark ::placeholder {
+  color: #7C7364;
+}
+
+html.dark ::selection {
+  background: #8FBF9F;
+  color: #171512;
+}
+
+html.dark * {
+  scrollbar-color: #4A453C transparent;
+}
+
+html.dark svg circle[stroke="#EFE8DA"] {
+  stroke: #3A352E;
+}
+
+html.dark input:focus,
+html.dark textarea:focus,
+html.dark select:focus {
+  box-shadow: 0 0 0 3px rgba(143, 191, 159, 0.25);
+}
+
+html.dark main section:hover,
+html.dark main article:hover {
+  box-shadow: 0 8px 22px -12px rgba(0, 0, 0, 0.6);
+}
+
+html.dark [class~="bg-[#E6DFD3]"] {
+  background-color: #3A352E;
+}
+
+html.dark [class~="bg-[#F1F6F2]"] {
+  background-color: #1F2B24;
+}
+
+html.dark [class~="bg-[#F3F8F4]"] {
+  background-color: #1F2B24;
+}
+
+html.dark [class~="bg-[#F4EFE6]"] {
+  background-color: #1C1A17;
+}
+
+html.dark [class~="bg-[#FAF7F2]"] {
+  background-color: #2A2723;
+}
+
+html.dark [class~="bg-[#FAF7F2]/40"] {
+  background-color: rgba(42, 39, 35, 0.40);
+}
+
+html.dark [class~="bg-[#FAF7F2]/60"] {
+  background-color: rgba(42, 39, 35, 0.60);
+}
+
+html.dark [class~="bg-[#FAF7F2]/70"] {
+  background-color: rgba(42, 39, 35, 0.70);
+}
+
+html.dark [class~="bg-[#FFF3EA]"] {
+  background-color: #2E2520;
+}
+
+html.dark [class~="bg-[#FFF8F3]"] {
+  background-color: #2E2520;
+}
+
+html.dark [class~="bg-amber-100"] {
+  background-color: #3E3217;
+}
+
+html.dark [class~="bg-amber-50"] {
+  background-color: #34291A;
+}
+
+html.dark [class~="bg-indigo-50"] {
+  background-color: #23264A;
+}
+
+html.dark [class~="bg-sky-100"] {
+  background-color: #17344A;
+}
+
+html.dark [class~="bg-white"] {
+  background-color: #211F1B;
+}
+
+html.dark [class~="bg-white/70"] {
+  background-color: rgba(33, 31, 27, 0.70);
+}
+
+html.dark [class~="border-[#D8CFC0]"] {
+  border-color: #4A453C;
+}
+
+html.dark [class~="border-[#E6DFD3]"] {
+  border-color: #3A352E;
+}
+
+html.dark [class~="border-[#E6DFD3]/70"] {
+  border-color: rgba(58, 53, 46, 0.70);
+}
+
+html.dark [class~="border-[#F0DDD0]"] {
+  border-color: #4F3D32;
+}
+
+html.dark [class~="border-amber-300"] {
+  border-color: #7A5F22;
+}
+
+html.dark [class~="border-sky-300"] {
+  border-color: #2D6A93;
+}
+
+html.dark [class~="divide-[#E6DFD3]/60"]>*+* {
+  border-color: rgba(58, 53, 46, 0.60);
+}
+
+html.dark [class~="hover:bg-[#E6DFD3]/50"]:hover {
+  background-color: rgba(58, 53, 46, 0.50);
+}
+
+html.dark [class~="hover:bg-[#E6DFD3]/60"]:hover {
+  background-color: rgba(58, 53, 46, 0.60);
+}
+
+html.dark [class~="hover:bg-[#FAF7F2]"]:hover {
+  background-color: #2A2723;
+}
+
+html.dark [class~="hover:bg-[#FAF7F2]/50"]:hover {
+  background-color: rgba(42, 39, 35, 0.50);
+}
+
+html.dark [class~="hover:bg-[#FFF3EA]"]:hover {
+  background-color: #2E2520;
+}
+
+html.dark [class~="hover:bg-rose-50"]:hover {
+  background-color: #371C23;
+}
+
+html.dark [class~="hover:bg-white"]:hover {
+  background-color: #211F1B;
+}
+
+html.dark [class~="hover:bg-white/60"]:hover {
+  background-color: rgba(33, 31, 27, 0.60);
+}
+
+html.dark [class~="hover:border-amber-300"]:hover {
+  border-color: #7A5F22;
+}
+
+html.dark [class~="hover:border-sky-300"]:hover {
+  border-color: #2D6A93;
+}
+
+html.dark [class~="hover:text-[#2D2A26]"]:hover {
+  color: #EEE8DD;
+}
+
+html.dark [class~="hover:text-[#5C7A67]"]:hover {
+  color: #8FBF9F;
+}
+
+html.dark [class~="hover:text-rose-600"]:hover {
+  color: #F58AA0;
+}
+
+html.dark [class~="hover:text-rose-700"]:hover {
+  color: #F59DB0;
+}
+
+html.dark [class~="text-[#2D2A26]"] {
+  color: #EEE8DD;
+}
+
+html.dark [class~="text-[#3F5B4B]"] {
+  color: #A8D0B8;
+}
+
+html.dark [class~="text-[#4A453E]"] {
+  color: #D5CDC0;
+}
+
+html.dark [class~="text-[#5C7A67]"] {
+  color: #8FBF9F;
+}
+
+html.dark [class~="text-[#6E675F]"] {
+  color: #B7AE9F;
+}
+
+html.dark [class~="text-[#8C8378]"] {
+  color: #9A9082;
+}
+
+html.dark [class~="text-[#C86D51]"] {
+  color: #EE9278;
+}
+
+html.dark [class~="text-amber-700"] {
+  color: #F2CB78;
+}
+
+html.dark [class~="text-emerald-600"] {
+  color: #5FD39A;
+}
+
+html.dark [class~="text-indigo-600"] {
+  color: #A5B4FC;
+}
+
+html.dark [class~="text-rose-600"] {
+  color: #F58AA0;
+}
+
+html.dark [class~="text-sky-600"] {
+  color: #8CCBEF;
+}
+
+/* DARK-MODE:END */

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Flame, Plus, Trash2, Check, ChevronLeft, ChevronRight } from 'lucide-react';
-import { calculateHabitStreak, getWeekDates, toDateKey, shiftDays } from '../../utils/dateHelpers';
+import { getHabitProgress, targetLabel, getWeekDates, toDateKey, shiftDays } from '../../utils/dateHelpers';
 import GrowthIcon, { stageFromStreak, daysToNextStage, STAGE_LABELS } from '../ui/GrowthIcon';
 
 const DAY_LABELS = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
@@ -12,10 +12,11 @@ export default function HabitTracker({
   onAddHabit,
   onDeleteHabit,
   growthTheme = 'plant',
-  onChangeGrowthTheme = () => { },
+  onChangeGrowthTheme = () => {},
 }) {
   const [name, setName] = useState('');
   const [category, setCategory] = useState('Kesehatan');
+  const [target, setTarget] = useState(7);
 
   const [weekOffset, setWeekOffset] = useState(0);
   const todayKey = toDateKey(new Date());
@@ -28,6 +29,7 @@ export default function HabitTracker({
       id: `h-${Date.now()}`,
       name: name.trim(),
       category,
+      target: Number(target),
     });
     setName('');
   };
@@ -79,8 +81,9 @@ export default function HabitTracker({
             <button
               key={t.id}
               onClick={() => onChangeGrowthTheme(t.id)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${growthTheme === t.id ? 'bg-[#5C7A67] text-white' : 'text-[#4A453E] hover:bg-[#FAF7F2]'
-                }`}
+              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                growthTheme === t.id ? 'bg-[#5C7A67] text-white' : 'text-[#4A453E] hover:bg-[#FAF7F2]'
+              }`}
             >
               {t.label}
             </button>
@@ -110,6 +113,17 @@ export default function HabitTracker({
           <option value="Mindfulness">Mindfulness</option>
           <option value="Produktivitas">Produktivitas</option>
         </select>
+        <select
+          value={target}
+          onChange={(e) => setTarget(e.target.value)}
+          className="rounded-xl border border-[#E6DFD3] bg-[#FAF7F2] px-3 py-2 text-sm"
+          title="Target kebiasaan"
+        >
+          <option value={7}>Tiap hari</option>
+          {[1, 2, 3, 4, 5, 6].map((n) => (
+            <option key={n} value={n}>{n}x / minggu</option>
+          ))}
+        </select>
         <button
           type="submit"
           className="flex items-center gap-1.5 rounded-xl bg-[#5C7A67] px-4 py-2 text-sm font-medium text-white hover:bg-[#4B6655]"
@@ -137,9 +151,10 @@ export default function HabitTracker({
           </thead>
           <tbody className="divide-y divide-[#E6DFD3]/60">
             {habits.map((habit) => {
-              const streak = calculateHabitStreak(habit.id, habitLogs);
-              const stage = stageFromStreak(streak);
-              const toNext = daysToNextStage(streak);
+              const prog = getHabitProgress(habit, habitLogs);
+              const streak = prog.streak;
+              const stage = stageFromStreak(streak, prog.weekly);
+              const toNext = daysToNextStage(streak, prog.weekly);
               return (
                 <tr key={habit.id} className="hover:bg-[#FAF7F2]/50">
                   <td className="py-3.5 pr-4">
@@ -148,11 +163,17 @@ export default function HabitTracker({
                       <div>
                         <p className="text-sm font-semibold text-[#2D2A26]">{habit.name}</p>
                         <span className="text-[11px] text-[#8C8378]">
-                          {habit.category} · {STAGE_LABELS[growthTheme][stage]}
+                          {habit.category} · {targetLabel(habit)} · {STAGE_LABELS[growthTheme][stage]}
                         </span>
+                        {prog.weekly && (
+                          <p className="text-[10px] font-semibold text-[#5C7A67]">
+                            Minggu ini: {prog.weekDone}/{prog.target}
+                            {prog.weekDone >= prog.target ? ' ✓ tercapai' : ''}
+                          </p>
+                        )}
                         <p className="text-[10px] text-[#C86D51]">
                           {toNext > 0
-                            ? `${toNext} hari lagi → ${STAGE_LABELS[growthTheme][stage + 1]}`
+                            ? `${toNext} ${prog.unit} lagi → ${STAGE_LABELS[growthTheme][stage + 1]}`
                             : 'Sudah mencapai tahap terbaik! 🎉'}
                         </p>
                       </div>
@@ -179,7 +200,7 @@ export default function HabitTracker({
                   <td className="py-3.5 text-center">
                     <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">
                       <Flame className="h-3.5 w-3.5 text-[#C86D51]" />
-                      {streak}h
+                      {streak}{prog.short}
                     </span>
                   </td>
 

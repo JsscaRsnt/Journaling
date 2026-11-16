@@ -39,6 +39,27 @@ export const getWeekDates = (dateStr) => {
   });
 };
 
+export const isEntryFilled = (e) =>
+  Boolean(
+    e &&
+    (e.mood ||
+      e.reflection?.trim() ||
+      e.highlight?.trim() ||
+      (e.gratitude || []).some((g) => g && g.trim()))
+  );
+
+// Berapa hari berturut-turut kamu menulis jurnal (hari ini boleh belum diisi)
+export const calculateJournalStreak = (dailyData) => {
+  let streak = 0;
+  let cursor = toDateKey(new Date());
+  if (!isEntryFilled(dailyData[cursor])) cursor = shiftDays(cursor, -1);
+  while (isEntryFilled(dailyData[cursor])) {
+    streak += 1;
+    cursor = shiftDays(cursor, -1);
+  }
+  return streak;
+};
+
 export const getWeekKey = (dateStr) => {
   const weekDates = getWeekDates(dateStr);
   return `${weekDates[0]}_to_${weekDates[6]}`;
@@ -76,4 +97,48 @@ export const calculateHabitStreak = (habitId, habitLogs) => {
     cursor = shiftDays(cursor, -1);
   }
   return streak;
+};
+// ====== Target mingguan untuk kebiasaan ======
+// habit.target = 7 (atau kosong) -> tiap hari; 1..6 -> "N kali seminggu"
+export const countWeekDone = (habitId, habitLogs, anyDateInWeek) =>
+  getWeekDates(anyDateInWeek).filter((d) => habitLogs[d]?.includes(habitId)).length;
+
+export const calculateWeeklyStreak = (habit, habitLogs) => {
+  const target = Math.max(1, Math.min(7, habit.target || 7));
+  let cursor = toDateKey(new Date());
+  let streak = 0;
+  // minggu berjalan belum tercapai -> mulai hitung dari minggu lalu (streak tidak langsung 0)
+  if (countWeekDone(habit.id, habitLogs, cursor) < target) cursor = shiftDays(cursor, -7);
+  while (streak < 520 && countWeekDone(habit.id, habitLogs, cursor) >= target) {
+    streak += 1;
+    cursor = shiftDays(cursor, -7);
+  }
+  return streak;
+};
+
+// Satu pintu untuk semua tampilan: unit hari (tiap hari) atau minggu (target mingguan)
+export const getHabitProgress = (habit, habitLogs) => {
+  const target = Math.max(1, Math.min(7, habit.target || 7));
+  const weekDone = countWeekDone(habit.id, habitLogs, toDateKey(new Date()));
+  if (target >= 7) {
+    return { weekly: false, unit: 'hari', short: 'h', streak: calculateHabitStreak(habit.id, habitLogs), target, weekDone };
+  }
+  return { weekly: true, unit: 'minggu', short: 'mg', streak: calculateWeeklyStreak(habit, habitLogs), target, weekDone };
+};
+
+export const targetLabel = (habit) => {
+  const t = habit.target || 7;
+  return t >= 7 ? 'Tiap hari' : `${t}x / minggu`;
+};
+
+// Daftar tanggal dalam rentang [start, end] inklusif
+export const dateRange = (start, end) => {
+  const out = [];
+  let cur = start;
+  let guard = 0;
+  while (cur <= end && guard++ < 800) {
+    out.push(cur);
+    cur = shiftDays(cur, 1);
+  }
+  return out;
 };

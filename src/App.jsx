@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
+import AuthGate from './components/views/AuthGate';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Menu } from 'lucide-react';
 import { INITIAL_JOURNAL_DATA } from './constants/journalConfig';
 import { toDateKey, shiftDays, calculateJournalStreak } from './utils/dateHelpers';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { useFocusTimer } from './hooks/useFocusTimer';
+import { useCloudSync } from './hooks/useCloudSync';
+import { useReminders } from './hooks/useReminders';
 
 import Sidebar from './components/layout/Sidebar';
 import DailyView from './components/views/DailyView';
@@ -16,6 +19,9 @@ import MoodGratitudeArchive from './components/trackers/MoodGratitudeArchive';
 import WatchlistTracker from './components/trackers/WatchlistTracker';
 import ReadingTracker from './components/trackers/ReadingTracker';
 import FocusTimer, { MiniTimer } from './components/trackers/FocusTimer';
+import InsightsView from './components/views/InsightsView';
+import SettingsView from './components/views/SettingsView';
+import ToastStack from './components/ui/ToastStack';
 
 export default function App() {
   const [data, setData] = useLocalStorage('ruang_jurnal_v1', INITIAL_JOURNAL_DATA);
@@ -23,6 +29,31 @@ export default function App() {
   const [selectedDate, setSelectedDate] = useState(toDateKey(new Date()));
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [growthTheme, setGrowthTheme] = useLocalStorage('ruang_jurnal_growth', 'plant');
+  const [uiTheme, setUiTheme] = useLocalStorage(
+    'ruang_jurnal_ui_theme',
+    typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: dark)').matches
+      ? 'dark'
+      : 'light'
+  );
+  const [toasts, setToasts] = useState([]);
+
+  // mode gelap: pasang class "dark" di <html>
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', uiTheme === 'dark');
+    document
+      .querySelector('meta[name="theme-color"]')
+      ?.setAttribute('content', uiTheme === 'dark' ? '#171512' : '#FAF7F2');
+  }, [uiTheme]);
+
+  const dismissToast = useCallback((id) => setToasts((p) => p.filter((t) => t.id !== id)), []);
+  const pushToast = useCallback(
+    (t) => {
+      const id = `${Date.now()}-${Math.random()}`;
+      setToasts((p) => [...p, { id, ...t }]);
+      setTimeout(() => dismissToast(id), 20000);
+    },
+    [dismissToast]
+  );
 
   const updateDaily = (dateKey, entry) => {
     setData((prev) => ({
@@ -109,6 +140,17 @@ export default function App() {
   };
 
   const timer = useFocusTimer(handleFocusComplete);
+  const reminders = useReminders(data, pushToast);
+  const cloud = useCloudSync(data, setData);
+
+  const allTags = Array.from(
+    new Set(Object.values(data.daily).flatMap((e) => e.tags || []))
+  ).sort();
+  const dataInfo = {
+    days: Object.keys(data.daily).length,
+    habits: data.habits.length,
+    kb: Math.max(1, Math.round(JSON.stringify(data).length / 1024)),
+  };
 
   // Pindahkan tugas prioritas yang belum selesai ke hari berikutnya
   const carryOver = (dateKey) => {
@@ -172,136 +214,180 @@ export default function App() {
     }
   };
 
+  const locked = cloud.configured && !cloud.signedIn;
+  const appRootRef = useRef(null);
+  // `inert` diatur lewat atribut DOM agar jalan di React 18 maupun 19.
+  useEffect(() => {
+    const el = appRootRef.current;
+    if (!el) return;
+    if (locked) el.setAttribute('inert', '');
+    else el.removeAttribute('inert');
+  }, [locked]);
+
   return (
-    <div className="bg-dots flex min-h-screen text-[#2D2A26]">
-      <Sidebar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        onExport={handleExport}
-        onReset={handleReset}
-        onImport={handleImport}
-        streak={streak}
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-      />
+    <>
+      {locked && <AuthGate cloud={cloud} />}
+      <div
+        className={`bg-dots flex min-h-screen text-[#2D2A26] ${locked ? 'pointer-events-none select-none' : ''}`}
+        ref={appRootRef}
+        aria-hidden={locked || undefined}
+      >
+        <Sidebar
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          streak={streak}
+          theme={uiTheme}
+          onToggleTheme={() => setUiTheme(uiTheme === 'dark' ? 'light' : 'dark')}
+          cloudStatus={cloud.status}
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+        />
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        {/* Topbar Mobile */}
-        <header className="flex items-center justify-between border-b border-[#E6DFD3] bg-[#F4EFE6] px-4 py-3 lg:hidden">
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="rounded-xl border border-[#D8CFC0] bg-white p-2 text-[#2D2A26]"
-          >
-            <Menu className="h-5 w-5" />
-          </button>
-          <span className="font-serif text-lg font-bold">Ruang Jurnal</span>
-          <div className="w-9" />
-        </header>
+        <div className="flex min-w-0 flex-1 flex-col">
+          {/* Topbar Mobile */}
+          <header className="flex items-center justify-between border-b border-[#E6DFD3] bg-[#F4EFE6] px-4 py-3 lg:hidden">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="rounded-xl border border-[#D8CFC0] bg-white p-2 text-[#2D2A26]"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+            <span className="font-serif text-lg font-bold">Ruang Jurnal</span>
+            <div className="w-9" />
+          </header>
 
-        <main className="mx-auto w-full max-w-5xl flex-1 p-4 sm:p-8">
-          {activeTab === 'daily' && (
-            <DailyView
-              selectedDate={selectedDate}
-              setSelectedDate={setSelectedDate}
-              dailyEntry={data.daily[selectedDate]}
-              onUpdateDaily={updateDaily}
-              habits={data.habits}
-              completedHabitIds={data.habitLogs[selectedDate] || []}
-              onToggleHabit={toggleHabit}
-              streak={streak}
-              focusToday={(data.focusLogs || {})[toDateKey(new Date())]}
-              onCarryOver={carryOver}
-              habitLogs={data.habitLogs}
-              growthTheme={growthTheme}
-            />
-          )}
+          <main className="mx-auto w-full max-w-5xl flex-1 p-4 sm:p-8">
+            {activeTab === 'daily' && (
+              <DailyView
+                selectedDate={selectedDate}
+                setSelectedDate={setSelectedDate}
+                dailyEntry={data.daily[selectedDate]}
+                onUpdateDaily={updateDaily}
+                habits={data.habits}
+                completedHabitIds={data.habitLogs[selectedDate] || []}
+                onToggleHabit={toggleHabit}
+                streak={streak}
+                focusToday={(data.focusLogs || {})[toDateKey(new Date())]}
+                onCarryOver={carryOver}
+                allTags={allTags}
+                habitLogs={data.habitLogs}
+                growthTheme={growthTheme}
+              />
+            )}
 
-          {activeTab === 'weekly' && (
-            <WeeklyView
-              selectedDate={selectedDate}
-              setSelectedDate={setSelectedDate}
-              dailyData={data.daily}
-              habitLogs={data.habitLogs}
-              habitsCount={data.habits.length}
-              weeklyData={data.weekly}
-              onUpdateWeekly={updateWeekly}
-              onJumpToDaily={jumpToDaily}
-            />
-          )}
+            {activeTab === 'weekly' && (
+              <WeeklyView
+                selectedDate={selectedDate}
+                setSelectedDate={setSelectedDate}
+                dailyData={data.daily}
+                habitLogs={data.habitLogs}
+                habitsCount={data.habits.length}
+                weeklyData={data.weekly}
+                onUpdateWeekly={updateWeekly}
+                onJumpToDaily={jumpToDaily}
+              />
+            )}
 
-          {activeTab === 'monthly' && (
-            <MonthlyView
-              dailyData={data.daily}
-              habitLogs={data.habitLogs}
-              monthlyData={data.monthly}
-              onUpdateMonthly={updateMonthly}
-              onJumpToDaily={jumpToDaily}
-            />
-          )}
+            {activeTab === 'monthly' && (
+              <MonthlyView
+                dailyData={data.daily}
+                habitLogs={data.habitLogs}
+                monthlyData={data.monthly}
+                onUpdateMonthly={updateMonthly}
+                onJumpToDaily={jumpToDaily}
+              />
+            )}
 
-          {activeTab === 'quarterly' && (
-            <QuarterlyView
-              quarterlyData={data.quarterly}
-              onUpdateQuarterly={updateQuarterly}
-            />
-          )}
+            {activeTab === 'quarterly' && (
+              <QuarterlyView
+                quarterlyData={data.quarterly}
+                onUpdateQuarterly={updateQuarterly}
+              />
+            )}
 
-          {activeTab === 'yearly' && (
-            <YearlyView
-              yearlyData={data.yearly}
-              onUpdateYearly={updateYearly}
-              dailyData={data.daily}
-              readingList={data.readingList}
-              watchlist={data.watchlist}
-            />
-          )}
+            {activeTab === 'yearly' && (
+              <YearlyView
+                yearlyData={data.yearly}
+                onUpdateYearly={updateYearly}
+                dailyData={data.daily}
+                readingList={data.readingList}
+                watchlist={data.watchlist}
+              />
+            )}
 
-          {activeTab === 'habits' && (
-            <HabitTracker
-              habits={data.habits}
-              habitLogs={data.habitLogs}
-              onToggleHabit={toggleHabit}
-              onAddHabit={addHabit}
-              onDeleteHabit={deleteHabit}
-              growthTheme={growthTheme}
-              onChangeGrowthTheme={setGrowthTheme}
-            />
-          )}
+            {activeTab === 'habits' && (
+              <HabitTracker
+                habits={data.habits}
+                habitLogs={data.habitLogs}
+                onToggleHabit={toggleHabit}
+                onAddHabit={addHabit}
+                onDeleteHabit={deleteHabit}
+                growthTheme={growthTheme}
+                onChangeGrowthTheme={setGrowthTheme}
+              />
+            )}
 
-          {activeTab === 'archive' && (
-            <MoodGratitudeArchive dailyData={data.daily} onJumpToDaily={jumpToDaily} />
-          )}
+            {activeTab === 'archive' && (
+              <MoodGratitudeArchive dailyData={data.daily} onJumpToDaily={jumpToDaily} />
+            )}
 
-          {activeTab === 'watchlist' && (
-            <WatchlistTracker
-              watchlist={data.watchlist}
-              onUpdateWatchlist={(updated) => setData((prev) => ({ ...prev, watchlist: updated }))}
-            />
-          )}
+            {activeTab === 'watchlist' && (
+              <WatchlistTracker
+                watchlist={data.watchlist}
+                onUpdateWatchlist={(updated) => setData((prev) => ({ ...prev, watchlist: updated }))}
+              />
+            )}
 
-          {activeTab === 'reading' && (
-            <ReadingTracker
-              readingList={data.readingList}
-              onUpdateReadingList={(updated) =>
-                setData((prev) => ({ ...prev, readingList: updated }))
-              }
-            />
-          )}
-          {activeTab === 'focus' && (
-            <FocusTimer
-              timer={timer}
-              focusLogs={data.focusLogs || {}}
-              todayPriorities={(data.daily[toDateKey(new Date())]?.priorities || []).filter(
-                (p) => !p.done
-              )}
-            />
-          )}
-        </main>
+            {activeTab === 'reading' && (
+              <ReadingTracker
+                readingList={data.readingList}
+                onUpdateReadingList={(updated) =>
+                  setData((prev) => ({ ...prev, readingList: updated }))
+                }
+              />
+            )}
+            {activeTab === 'insights' && (
+              <InsightsView
+                dailyData={data.daily}
+                habits={data.habits}
+                habitLogs={data.habitLogs}
+                focusLogs={data.focusLogs || {}}
+              />
+            )}
+
+            {activeTab === 'settings' && (
+              <SettingsView
+                theme={uiTheme}
+                onThemeChange={setUiTheme}
+                growthTheme={growthTheme}
+                onGrowthChange={setGrowthTheme}
+                reminders={reminders}
+                cloud={cloud}
+                onExport={handleExport}
+                onImport={handleImport}
+                onReset={handleReset}
+                dataInfo={dataInfo}
+              />
+            )}
+
+            {activeTab === 'focus' && (
+              <FocusTimer
+                timer={timer}
+                focusLogs={data.focusLogs || {}}
+                todayPriorities={(data.daily[toDateKey(new Date())]?.priorities || []).filter(
+                  (p) => !p.done
+                )}
+              />
+            )}
+          </main>
+        </div>
+
+        <ToastStack toasts={toasts} onDismiss={dismissToast} onOpen={setActiveTab} />
+
+        {timer.state.running && activeTab !== 'focus' && (
+          <MiniTimer timer={timer} onOpen={() => setActiveTab('focus')} />
+        )}
       </div>
-
-      {timer.state.running && activeTab !== 'focus' && (
-        <MiniTimer timer={timer} onOpen={() => setActiveTab('focus')} />
-      )}
-    </div>
+    </>
   );
 }
