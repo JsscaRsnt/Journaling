@@ -87,8 +87,8 @@ export default function MoodGratitudeArchive({ dailyData, onJumpToDaily }) {
           <button
             onClick={() => setActiveTag(null)}
             className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${activeTag === null
-                ? 'border-[#5C7A67] bg-[#5C7A67] text-white'
-                : 'border-[#E6DFD3] bg-white text-[#4A453E]'
+              ? 'border-[#5C7A67] bg-[#5C7A67] text-white'
+              : 'border-[#E6DFD3] bg-white text-[#4A453E]'
               }`}
           >
             Semua
@@ -98,8 +98,8 @@ export default function MoodGratitudeArchive({ dailyData, onJumpToDaily }) {
               key={tag}
               onClick={() => setActiveTag(activeTag === tag ? null : tag)}
               className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${activeTag === tag
-                  ? 'border-[#5C7A67] bg-[#5C7A67] text-white'
-                  : 'border-[#E6DFD3] bg-white text-[#4A453E]'
+                ? 'border-[#5C7A67] bg-[#5C7A67] text-white'
+                : 'border-[#E6DFD3] bg-white text-[#4A453E]'
                 }`}
             >
               #{tag} <span className="opacity-70">{n}</span>

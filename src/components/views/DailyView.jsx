@@ -182,8 +182,8 @@ export default function DailyView({
                 key={i}
                 onClick={() => setWater(i + 1)}
                 className={`flex h-9 w-9 items-center justify-center rounded-xl border transition ${i < entry.water
-                    ? 'border-sky-300 bg-sky-100 text-sky-600'
-                    : 'border-[#E6DFD3] bg-[#FAF7F2] text-[#C9BFAE] hover:border-sky-300'
+                  ? 'border-sky-300 bg-sky-100 text-sky-600'
+                  : 'border-[#E6DFD3] bg-[#FAF7F2] text-[#C9BFAE] hover:border-sky-300'
                   }`}
                 title={`Gelas ${i + 1}`}
               >
@@ -232,8 +232,8 @@ export default function DailyView({
                   onUpdateDaily(selectedDate, { ...entry, energy: entry.energy === en.v ? null : en.v })
                 }
                 className={`flex flex-col items-center gap-1 rounded-xl border px-1 py-2 text-[11px] transition ${entry.energy === en.v
-                    ? 'border-amber-300 bg-amber-100 font-semibold text-amber-700'
-                    : 'border-[#E6DFD3] bg-[#FAF7F2] text-[#6E675F] hover:border-amber-300'
+                  ? 'border-amber-300 bg-amber-100 font-semibold text-amber-700'
+                  : 'border-[#E6DFD3] bg-[#FAF7F2] text-[#6E675F] hover:border-amber-300'
                   }`}
               >
                 <span className="flex">

@@ -12,7 +12,7 @@ export default function HabitTracker({
   onAddHabit,
   onDeleteHabit,
   growthTheme = 'plant',
-  onChangeGrowthTheme = () => {},
+  onChangeGrowthTheme = () => { },
 }) {
   const [name, setName] = useState('');
   const [category, setCategory] = useState('Kesehatan');
@@ -81,9 +81,8 @@ export default function HabitTracker({
             <button
               key={t.id}
               onClick={() => onChangeGrowthTheme(t.id)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
-                growthTheme === t.id ? 'bg-[#5C7A67] text-white' : 'text-[#4A453E] hover:bg-[#FAF7F2]'
-              }`}
+              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${growthTheme === t.id ? 'bg-[#5C7A67] text-white' : 'text-[#4A453E] hover:bg-[#FAF7F2]'
+                }`}
             >
               {t.label}
             </button>

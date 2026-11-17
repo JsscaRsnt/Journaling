@@ -111,9 +111,8 @@ export default function FocusTimer({ timer, focusLogs = {}, todayPriorities = []
                 key={m.id}
                 disabled={t.running}
                 onClick={() => timer.setMode(m.id)}
-                className={`flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${
-                  t.mode === m.id ? 'bg-white text-[#2D2A26] shadow-xs' : 'text-[#6E675F] hover:bg-white/60'
-                }`}
+                className={`flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${t.mode === m.id ? 'bg-white text-[#2D2A26] shadow-xs' : 'text-[#6E675F] hover:bg-white/60'
+                  }`}
               >
                 {m.label}
               </button>
@@ -127,13 +126,12 @@ export default function FocusTimer({ timer, focusLogs = {}, todayPriorities = []
                   key={p.id}
                   disabled={t.running}
                   onClick={() => timer.setPhase(p.id)}
-                  className={`rounded-full border px-3 py-1 text-xs font-semibold transition disabled:cursor-not-allowed ${
-                    t.phase === p.id
+                  className={`rounded-full border px-3 py-1 text-xs font-semibold transition disabled:cursor-not-allowed ${t.phase === p.id
                       ? p.id === 'focus'
                         ? 'border-[#5C7A67] bg-[#5C7A67] text-white'
                         : 'border-[#C86D51] bg-[#C86D51] text-white'
                       : 'border-[#E6DFD3] bg-[#FAF7F2] text-[#4A453E]'
-                  }`}
+                    }`}
                 >
                   {p.label}
                 </button>
@@ -179,11 +177,10 @@ export default function FocusTimer({ timer, focusLogs = {}, todayPriorities = []
                   key={m}
                   disabled={t.running}
                   onClick={() => timer.setTimerMinutes(m)}
-                  className={`rounded-full border px-3 py-1 text-xs font-semibold disabled:cursor-not-allowed ${
-                    t.timerMinutes === m
+                  className={`rounded-full border px-3 py-1 text-xs font-semibold disabled:cursor-not-allowed ${t.timerMinutes === m
                       ? 'border-[#5C7A67] bg-[#5C7A67] text-white'
                       : 'border-[#E6DFD3] bg-[#FAF7F2] text-[#4A453E]'
-                  }`}
+                    }`}
                 >
                   {m} mnt
                 </button>
